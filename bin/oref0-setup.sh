@@ -78,10 +78,10 @@ case $i in
     current_basal_safety_multiplier="${i#*=}"
     shift # past argument=value
     ;;
-    -bdd=*|--bolussnooze_dia_divisor=*)
-    bolussnooze_dia_divisor="${i#*=}"
-    shift # past argument=value
-    ;;
+    #-bdd=*|--bolussnooze_dia_divisor=*)
+    #bolussnooze_dia_divisor="${i#*=}"
+    #shift # past argument=value
+    #;;
     -m5c=*|--min_5m_carbimpact=*)
     min_5m_carbimpact="${i#*=}"
     shift # past argument=value
@@ -137,8 +137,8 @@ case $i in
 esac
 done
 
-if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
-    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, MDT or xdrip."
+if ! [[ ${CGM,,} =~ "g4-upload" || ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" || ${CGM,,} =~ "mdt" || ${CGM,,} =~ "shareble" || ${CGM,,} =~ "xdrip" || ${CGM,,} =~ "g4-local" ]]; then
+    echo "Unsupported CGM.  Please select (Dexcom) G4-upload (default), G4-local-only, G5, G5-upload, MDT or xdrip."
     echo
     DIR="" # to force a Usage prompt
 fi
@@ -170,7 +170,7 @@ if [[ -z "$DIR" || -z "$serial" ]]; then
         echocolor "You're using a different model pump. Got it."
     fi
 
-    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout:   " -r
+    read -p "What kind of CGM are you using? (e.g., G4-upload, G4-local-only, G5, G5-upload, MDT, xdrip?) Note: G4-local-only will NOT upload BGs from a plugged in receiver to Nightscout:   " -r
     CGM=$REPLY
     echocolor "Ok, $CGM it is."
     echo
@@ -425,9 +425,9 @@ fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
     echo -n ", current_basal_safety_multiplier $current_basal_safety_multiplier";
 fi
-if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-    echo -n ", bolussnooze_dia_divisor $bolussnooze_dia_divisor";
-fi
+#if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+    #echo -n ", bolussnooze_dia_divisor $bolussnooze_dia_divisor";
+#fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
     echo -n ", min_5m_carbimpact $min_5m_carbimpact";
 fi
@@ -462,9 +462,9 @@ fi
 if [[ ! -z "$current_basal_safety_multiplier" ]]; then
     echo -n " --current_basal_safety_multiplier=$current_basal_safety_multiplier" | tee -a $OREF0_RUNAGAIN
 fi
-if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-    echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a $OREF0_RUNAGAIN
-fi
+#if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+    #echo -n " --bolussnooze_dia_divisor=$bolussnooze_dia_divisor" | tee -a $OREF0_RUNAGAIN
+#fi
 if [[ ! -z "$min_5m_carbimpact" ]]; then
     echo -n " --min_5m_carbimpact=$min_5m_carbimpact" | tee -a $OREF0_RUNAGAIN
 fi
@@ -574,14 +574,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     echo Checking mmeowlink installation
 #if openaps vendor add --path . mmeowlink.vendors.mmeowlink 2>&1 | grep "No module"; then
-    pip show mmeowlink | egrep "Version: 0.11." || (
+    pip show mmeowlink | egrep "Version: 0.11.1" || (
         echo Installing latest mmeowlink
         sudo pip install -U mmeowlink || die "Couldn't install mmeowlink"
     )
 #fi
 
     cd $directory || die "Can't cd $directory"
-    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$bolussnooze_dia_divisor" && -z "$min_5m_carbimpact" ]]; then
+    if [[ "$max_iob" == "0" && -z "$max_daily_safety_multiplier" && -z "$current_basal_safety_multiplier" && -z "$min_5m_carbimpact" ]]; then
+        cp preferences.json old_preferences.json
         oref0-get-profile --exportDefaults > preferences.json || die "Could not run oref0-get-profile"
     else
         preferences_from_args=()
@@ -594,9 +595,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ! -z "$current_basal_safety_multiplier" ]]; then
             preferences_from_args+="\"current_basal_safety_multiplier\":$current_basal_safety_multiplier "
         fi
-        if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
-            preferences_from_args+="\"bolussnooze_dia_divisor\":$bolussnooze_dia_divisor "
-        fi
+        #if [[ ! -z "$bolussnooze_dia_divisor" ]]; then
+            #preferences_from_args+="\"bolussnooze_dia_divisor\":$bolussnooze_dia_divisor "
+        #fi
         if [[ ! -z "$min_5m_carbimpact" ]]; then
             preferences_from_args+="\"min_5m_carbimpact\":$min_5m_carbimpact "
         fi
@@ -636,20 +637,46 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Install Bluez for BT Tethering
         echo Checking bluez installation
         bluetoothdversion=$(bluetoothd --version || 0)
-        bluetoothdminversion=5.37
+        bluetoothdminversion=5.47
         bluetoothdversioncompare=$(awk 'BEGIN{ print "'$bluetoothdversion'"<"'$bluetoothdminversion'" }')
         if [ "$bluetoothdversioncompare" -eq 1 ]; then
             killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
-            cd $HOME/src/ && wget https://www.kernel.org/pub/linux/bluetooth/bluez-5.44.tar.gz && tar xvfz bluez-5.44.tar.gz || die "Couldn't download bluez"
-            cd $HOME/src/bluez-5.44 && ./configure --enable-experimental --disable-systemd && \
-            make && sudo make install && sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't make bluez"
+            cd $HOME/src/ && wget -4 https://www.kernel.org/pub/linux/bluetooth/bluez-5.47.tar.gz && tar xvfz bluez-5.47.tar.gz || die "Couldn't download bluez"
+            cd $HOME/src/bluez-5.47 && ./configure --enable-experimental --disable-systemd && \
+            make && sudo make install || die "Couldn't make bluez"
+            killall bluetoothd &>/dev/null #Kill current running version if its out of date and we are updating it
+            sudo cp ./src/bluetoothd /usr/local/bin/ || die "Couldn't install bluez"
             oref0-bluetoothup
         else
             echo bluez v ${bluetoothdversion} already installed
         fi
-    fi
+        echo Installing prerequisites and configs for local-only hotspot
+        apt-get install -y hostapd dnsmasq || die "Couldn't install hostapd dnsmasq"
+        ls /etc/dnsmasq.conf.bak 2>/dev/null || mv /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+        cp $HOME/src/oref0/headless/dnsmasq.conf /etc/dnsmasq.conf || die "Couldn't copy dnsmasq.conf"
+        ls /etc/hostapd/hostapd.conf.bak 2>/dev/null || mv /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.bak
+        cp $HOME/src/oref0/headless/hostapd.conf /etc/hostapd/hostapd.conf || die "Couldn't copy hostapd.conf"
+        sed -i.bak -e "s|DAEMON_CONF=$|DAEMON_CONF=/etc/hostapd/hostapd.conf|g" /etc/init.d/hostapd
+        cp $HOME/src/oref0/headless/interfaces.ap /etc/network/ || die "Couldn't copy interfaces.ap"
+        cp /etc/network/interfaces /etc/network/interfaces.client || die "Couldn't copy interfaces.client"
+        #Stop automatic startup of hostapd & dnsmasq
+        update-rc.d -f hostapd remove 
+        update-rc.d -f dnsmasq remove 
+        # Edit /etc/hostapd/hostapd.conf for wifi using Hostname
+        sed -i.bak -e "s/ssid=OpenAPS/ssid=${HOSTNAME}/" /etc/hostapd/hostapd.conf
+        # Add Commands to /etc/rc.local 
+        # Interrupt Kernel Messages
+        if ! grep -q 'sudo dmesg -n 1' /etc/rc.local; then
+          sed -i.bak -e '$ i sudo dmesg -n 1' /etc/rc.local
+        fi  
+        # Add to /etc/rc.local to check if in hotspot mode and turn back to client mode during bootup
+        if ! grep -q 'cp /etc/network/interfaces.client /etc/network/interfaces' /etc/rc.local; then
+          sed -i.bak -e "$ i if [ -f /etc/network/interfaces.client ]; then\n\tif  grep -q '#wpa-' /etc/network/interfaces; then\n\t\tsudo ifdown wlan0\n\t\tsudo cp /etc/network/interfaces.client /etc/network/interfaces\n\t\tsudo ifup wlan0\n\tfi\nfi" /etc/rc.local || die "Couldn't modify /etc/rc.local"
+        fi
+    fi 
+    
     # add/configure devices
-    if [[ ${CGM,,} =~ "g5" ]]; then
+    if [[ ${CGM,,} =~ "g5" || ${CGM,,} =~ "g5-upload" ]]; then
         openaps use cgm config --G5
         openaps report add raw-cgm/raw-entries.json JSON cgm oref0_glucose --hours "24.0" --threshold "100" --no-raw
     elif [[ ${CGM,,} =~ "shareble" ]]; then
@@ -669,6 +696,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if ! python -c "import openxshareble" 2>/dev/null; then
             echo Installing openxshareble && sudo pip install git+https://github.com/openaps/openxshareble.git@dev || die "Couldn't install openxshareble"
         fi
+        sudo apt-get update; sudo apt-get upgrade
         sudo apt-get -y install bc jq libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev python-dbus || die "Couldn't apt-get install: run 'sudo apt-get update' and try again?"
         echo Checking bluez installation
         # TODO: figure out if we need to do this for 5.44 as well
@@ -868,23 +896,27 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sudo sysctl -p
     
     # Install EdisonVoltage
-    if egrep -i "edison" /etc/passwd 2>/dev/null; then
-        echo "Checking if EdisonVoltage is already installed"
-        if [ -d "$HOME/src/EdisonVoltage/" ]; then
-            echo "EdisonVoltage already installed"
-        else
-            echo "Installing EdisonVoltage"
-            cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
-            cd $HOME/src/EdisonVoltage
-            make voltage
+    if [[ "$ttyport" =~ "spidev5.1" ]]; then
+        if egrep -i "edison" /etc/passwd 2>/dev/null; then
+            echo "Checking if EdisonVoltage is already installed"
+            if [ -d "$HOME/src/EdisonVoltage/" ]; then
+                echo "EdisonVoltage already installed"
+            else
+                echo "Installing EdisonVoltage"
+                cd $HOME/src && git clone -b master git://github.com/cjo20/EdisonVoltage.git || (cd EdisonVoltage && git checkout master && git pull)
+                cd $HOME/src/EdisonVoltage
+                make voltage
+            fi
+            # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
+            grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
         fi
-        # Add module needed for EdisonVoltage to work on jubilinux 0.2.0
-        grep iio_basincove_gpadc /etc/modules-load.d/modules.conf || echo iio_basincove_gpadc >> /etc/modules-load.d/modules.conf
-        cd $directory || die "Can't cd $directory"
-        for type in edisonbattery; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-        done
+        if [[ ${CGM,,} =~ "mdt" ]] || [[ ${CGM,,} =~ "xdrip" ]]; then # still need this for the old ns-loop for now
+            cd $directory || die "Can't cd $directory"
+            for type in edisonbattery; do
+                echo importing $type file
+                cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+            done
+        fi
     fi
     # Install Pancreabble
     echo Checking for BT Pebble Mac
@@ -929,17 +961,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "settings removed, getting ready to add x12 settings"
         openaps alias add get-settings "report invoke settings/model.json settings/bg_targets.json settings/insulin_sensitivities_raw.json settings/insulin_sensitivities.json settings/carb_ratios.json settings/profile.json" || die "Could not add x12 settings"
     else
-        # configure supermicrobolus if enabled
-        # If you aren't sure what you're doing, *DO NOT* enable this.
-        # If you ignore this warning, it *WILL* administer extra post-meal insulin, which may cause low blood sugar.
-        if [[ $ENABLE =~ microbolus ]]; then
-            sudo apt-get -y install bc jq
-            cd $directory || die "Can't cd $directory"
-            for type in supermicrobolus; do
-            echo importing $type file
-            cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
-            done
-        fi
+        sudo apt-get -y install bc jq
+        cd $directory || die "Can't cd $directory"
+        for type in supermicrobolus; do
+        echo importing $type file
+        cat $HOME/src/oref0/lib/oref0-setup/$type.json | openaps import || die "Could not import $type.json"
+        done
     fi
 
     echo "Adding OpenAPS log shortcuts"
@@ -995,11 +1022,17 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         (crontab -l; crontab -l | grep -q "NIGHTSCOUT_HOST" || echo NIGHTSCOUT_HOST=$NIGHTSCOUT_HOST) | crontab -
         (crontab -l; crontab -l | grep -q "API_SECRET=" || echo API_SECRET=$API_HASHED_SECRET) | crontab -
         (crontab -l; crontab -l | grep -q "PATH=" || echo "PATH=$PATH" ) | crontab -
-        (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
+        (crontab -l; crontab -l | grep -q "oref0-online $BT_MAC" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-online '$BT_MAC'" || cd '$directory' && oref0-online '$BT_MAC' 2>&1 >> /var/log/openaps/network.log' ) | crontab -
+        # temporarily disable hotspot for 1m every hour to allow it to try to connect via wifi again
+        (crontab -l; crontab -l | grep -q "touch /tmp/disable_hotspot" || echo '0 * * * * touch /tmp/disable_hotspot' ) | crontab -
+        (crontab -l; crontab -l | grep -q "rm /tmp/disable_hotspot" || echo '1 * * * * rm /tmp/disable_hotspot' ) | crontab -
         (crontab -l; crontab -l | grep -q "sudo wpa_cli scan" || echo '* * * * * sudo wpa_cli scan') | crontab -
         (crontab -l; crontab -l | grep -q "killall -g --older-than 30m oref0" || echo '* * * * * ( killall -g --older-than 30m openaps; killall -g --older-than 30m oref0-pump-loop; killall -g --older-than 30m openaps-report )') | crontab -
         # kill pump-loop after 5 minutes of not writing to pump-loop.log
         (crontab -l; crontab -l | grep -q "killall -g --older-than 5m oref0" || echo '* * * * * find /var/log/openaps/pump-loop.log -mmin +5 | grep pump && ( killall -g --older-than 5m openaps; killall -g --older-than 5m oref0-pump-loop; killall -g --older-than 5m openaps-report )') | crontab -
+        if [[ ${CGM,,} =~ "g5-upload" ]]; then
+            (crontab -l; crontab -l | grep -q "oref0-upload-entries" || echo "* * * * * cd $directory && oref0-upload-entries" ) | crontab -
+        fi
         if [[ ${CGM,,} =~ "shareble" || ${CGM,,} =~ "g4-upload" ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm'" || echo "* * * * * cd $directory-cgm-loop && ps aux | grep -v grep | grep -q 'openaps monitor-cgm' || ( date; openaps monitor-cgm) | tee -a /var/log/openaps/cgm-loop.log; cp -up monitor/glucose-raw-merge.json $directory/cgm/glucose.json ; cp -up $directory/cgm/glucose.json $directory/monitor/glucose.json") | crontab -
         elif [[ ${CGM,,} =~ "xdrip" ]]; then
@@ -1010,7 +1043,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         elif ! [[ ${CGM,,} =~ "mdt" ]]; then # use nightscout for cgm
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps get-bg' || ( date; openaps get-bg ; cat cgm/glucose.json | json -a sgv dateString | head -1 ) | tee -a /var/log/openaps/cgm-loop.log") | crontab -
         fi
-        (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+        if [[ ${CGM,,} =~ "mdt" ]] || [[ ${CGM,,} =~ "xdrip" ]]; then # use old ns-loop for now
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps ns-loop' || openaps ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+        else
+            (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop'" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'oref0-ns-loop' || oref0-ns-loop | tee -a /var/log/openaps/ns-loop.log") | crontab -
+        fi
         if [[ $ENABLE =~ autosens ]]; then
             (crontab -l; crontab -l | grep -q "cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens 2>&1" || echo "* * * * * cd $directory && ps aux | grep -v grep | grep -q 'openaps autosens' || openaps autosens 2>&1 | tee -a /var/log/openaps/autosens-loop.log") | crontab -
         fi
@@ -1033,9 +1070,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         if [[ ! -z "$BT_PEB" || ! -z "$BT_MAC" ]]; then
         (crontab -l; crontab -l | grep -q "oref0-bluetoothup" || echo '* * * * * ps aux | grep -v grep | grep -q "oref0-bluetoothup" || oref0-bluetoothup >> /var/log/openaps/network.log' ) | crontab -
         fi
-        # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
-        if egrep -i "edison" /etc/passwd 2>/dev/null; then
-        (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
+        if [[ "$ttyport" =~ "spidev5.1" ]]; then
+           # proper shutdown once the EdisonVoltage very low (< 3050mV; 2950 is dead)
+           if egrep -i "edison" /etc/passwd 2>/dev/null; then
+           (crontab -l; crontab -l | grep -q "cd $directory && openaps battery-status" || echo "*/15 * * * * cd $directory && openaps battery-status; cat $directory/monitor/edison-battery.json | json batteryVoltage | awk '{if (\$1<=3050)system(\"sudo shutdown -h now\")}'") | crontab -
+           fi
         fi
         (crontab -l; crontab -l | grep -q "cd $directory && oref0-delete-future-entries" || echo "@reboot cd $directory && oref0-delete-future-entries") | crontab -
         if [[ ! -z "$PUSHOVER_TOKEN" && ! -z "$PUSHOVER_USER" ]]; then
