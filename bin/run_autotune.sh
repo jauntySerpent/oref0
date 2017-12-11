@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+#This is a simple shell script to automate running autotune for once-off users on a Linux machine. This script has NOT been tested with OSX.
+
+
 #Changes the directory to the default openaps installation directory. ONLY EDIT IF YOU ARE NOT USING THE DEFAULT "myopenaps" DIRECTORY
 cd ~/myopenaps/settings
 
