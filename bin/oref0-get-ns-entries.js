@@ -2,14 +2,11 @@
 
 /*
   oref0 Nightscout treatment fetch tool
-
   Collects latest treatment data from Nightscout, with support for sending the
   If-Modified-Since header and not outputting the report file on 304 Not Modified
   response.
-
   Released under MIT license. See the accompanying LICENSE.txt file for
   full terms and conditions
-
   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,7 +14,6 @@
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
-
 */
 
 var crypto = require('crypto');
